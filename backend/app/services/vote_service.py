@@ -38,28 +38,18 @@ class VoteService:
     @staticmethod
     def compute_effective_color(vote_counts: Dict[str, int], original_color: str) -> str:
         """Compute the effective color based on vote counts and original color.
-        The original color is kept unless another color exceeds it by a 10% margin.
+        Return original_color if total votes < 10.
+        Otherwise, return the color with the most votes (simple majority).
         """
         total = sum(vote_counts.values())
-        if total == 0:
+        if total < 10:
             return original_color
-        
-        original_votes = vote_counts.get(original_color, 0)
         
         # Find the color with the most votes
         max_color = max(vote_counts, key=vote_counts.get)
-        max_votes = vote_counts[max_color]
         
-        # If the original color has the most votes, keep it
-        if max_color == original_color:
-            return original_color
-        
-        # The challenger must exceed the original by 10% of total votes
-        margin = total * 0.10
-        if max_votes > original_votes + margin:
-            return max_color
-        
-        return original_color
+        # Return the majority color
+        return max_color
 
     @staticmethod
     def update_target_color(db: Session, target_type: str, target_id: int):
