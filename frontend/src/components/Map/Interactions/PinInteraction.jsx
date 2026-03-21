@@ -2,20 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '../../../api/apiService';
-
-// Category definitions with labels and SVG paths for pin icons
-const CATEGORIES = {
-    crime: { label: 'Crime / Delinquency', icon: '🔫', svgPath: 'M17 2h-2V0h-2v2H9V0H7v2H5a2 2 0 00-2 2v2h18V4a2 2 0 00-2-2zM3 8v10a2 2 0 002 2h14a2 2 0 002-2V8H3zm4 8H5v-2h2v2zm0-4H5v-2h2v2zm4 4H9v-2h2v2zm0-4H9v-2h2v2zm4 4h-2v-2h2v2zm4-4h-2v-2h2v2z' },
-    alcohol: { label: 'Alcohol / Partying', icon: '🍺', svgPath: 'M8 2L6 14h12l-2-12H8zM6 16v2h12v-2H6zM11 6v6m-2-4h4' },
-    screaming: { label: 'Screaming / Disturbances', icon: '😱', svgPath: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-10c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm6 0c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm-3 5.5c-1.66 0-3-1.12-3-2.5h6c0 1.38-1.34 2.5-3 2.5z' },
-    loud_music: { label: 'Loud Music', icon: '🎵', svgPath: 'M12 3v10.55A4 4 0 1014 17V7h4V3h-6zM10 19a2 2 0 110-4 2 2 0 010 4z' },
-    traffic: { label: 'Traffic / Noise', icon: '🚗', svgPath: 'M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z' },
-    poor_lighting: { label: 'Poor Lighting', icon: '💡', svgPath: 'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z' },
-    dirty: { label: 'Dirty / Trash', icon: '🗑️', svgPath: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' },
-    construction: { label: 'Construction / Roadworks', icon: '🚧', svgPath: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' },
-    dangerous_animals: { label: 'Dangerous Animals', icon: '🐕', svgPath: 'M4.5 11.5c0 2 1.5 3.5 3.5 3.5h1v4h2v-4h2v4h2v-4h1c2 0 3.5-1.5 3.5-3.5V10H4.5v1.5zM12 3C9.5 3 7.5 4 6.5 5.5L5 7h14l-1.5-1.5C16.5 4 14.5 3 12 3zm-2 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z' },
-    general_warning: { label: 'General Warning', icon: '⚠️', svgPath: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' },
-};
+import { CATEGORIES } from '../../../utils/categories';
 
 // Create a custom SVG icon for pins with category-specific shapes
 const createCategoryIcon = (category, color) => {
@@ -28,25 +15,25 @@ const createCategoryIcon = (category, color) => {
     const cat = CATEGORIES[category] || CATEGORIES.general_warning;
 
     const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="36" height="47">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="46" height="60">
             <defs>
                 <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/>
+                    <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-opacity="0.35"/>
                 </filter>
             </defs>
             <path fill="${fill}" filter="url(#shadow)" d="M20 0C9 0 0 9 0 20c0 11 20 32 20 32s20-21 20-32C40 9 31 0 20 0z"/>
-            <circle cx="20" cy="18" r="13" fill="white" opacity="0.9"/>
-            <text x="20" y="24" text-anchor="middle" font-size="16" dominant-baseline="middle">${cat.icon}</text>
+            <circle cx="20" cy="18" r="14" fill="white" opacity="0.95"/>
+            <path fill="${fill}" transform="translate(8, 6)" d="${cat.svgPath}"/>
         </svg>
     `;
 
     return L.divIcon({
         className: 'custom-pin-icon',
         html: svg,
-        iconSize: [36, 47],
-        iconAnchor: [18, 47],
-        popupAnchor: [0, -47],
-        tooltipAnchor: [18, -34]
+        iconSize: [46, 60],
+        iconAnchor: [23, 60],
+        popupAnchor: [0, -60],
+        tooltipAnchor: [23, -40]
     });
 };
 
@@ -250,6 +237,15 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
         return CATEGORIES[category]?.icon || '⚠️';
     };
 
+    const getCategorySvg = (category, fill = 'currentColor') => {
+        const path = CATEGORIES[category]?.svgPath || CATEGORIES.general_warning.svgPath;
+        return (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24px" height="24px" style={{ flexShrink: 0, display: 'block' }}>
+                <path d={path} fill={fill} />
+            </svg>
+        );
+    };
+
     const VoteColorButton = ({ pin, color }) => {
         const colorMap = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444' };
         const isActive = pin.userVoteColor === color;
@@ -332,9 +328,14 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                             >
                                 <div
                                     className="map-label-style"
-                                    style={{ fontSize: '12px' }}
+                                    style={{ 
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
                                 >
-                                    {getCategoryIcon(pin.category)} {getCategoryLabel(pin.category)}
+                                    {getCategorySvg(pin.category, pin.color === 'blue' ? '#3b82f6' : pin.color === 'green' ? '#22c55e' : '#ef4444')} {getCategoryLabel(pin.category)}
                                 </div>
                             </Tooltip>
                         )}
@@ -342,8 +343,10 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                         <Popup className="premium-popup">
                             <div className="popup-content">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                    <span style={{ fontSize: '1.3rem' }}>{getCategoryIcon(pin.category)}</span>
-                                    <strong>{getCategoryLabel(pin.category)}</strong>
+                                    <span style={{ fontSize: '1.3rem', display: 'flex' }}>
+                                        {getCategorySvg(pin.category, pin.color === 'blue' ? '#3b82f6' : pin.color === 'green' ? '#22c55e' : '#ef4444')}
+                                    </span>
+                                    <strong style={{ marginLeft: '2px' }}>{getCategoryLabel(pin.category)}</strong>
                                 </div>
                                 <small style={{ color: '#666' }}>
                                     {new Date(pin.createdAt).toLocaleDateString()}
