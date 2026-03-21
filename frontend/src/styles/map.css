@@ -1,0 +1,58 @@
+.leaflet-container {
+    width: 100%;
+    height: 100dvh;
+    height: 100vh;
+    /* fallback for older browsers */
+    height: 100dvh;
+}
+
+/* Modern tooltip for area labels */
+.modern-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+.modern-tooltip::before {
+    display: none !important;
+}
+
+/* Map Label Style */
+.map-label-style {
+    color: white !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    text-align: center;
+    line-height: 1.1;
+    pointer-events: none;
+    text-shadow:
+        -1.5px -1.5px 0 #000,
+        1.5px -1.5px 0 #000,
+        -1.5px 1.5px 0 #000,
+        1.5px 1.5px 0 #000,
+        2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+    white-space: pre-wrap;
+    display: block;
+}
+
+/* Cursor Modes */
+.map-mode-pin {
+    cursor: crosshair !important;
+}
+
+.map-mode-area {
+    cursor: text !important;
+}
+
+.map-mode-pin .leaflet-grab,
+.map-mode-area .leaflet-grab {
+    cursor: inherit !important;
+}
+
+.custom-pin-icon {
+    background: transparent;
+    border: none;
+}

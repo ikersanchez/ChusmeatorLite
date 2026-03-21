@@ -1,0 +1,13 @@
+{
+    "name": "chusmeator",
+    "version": "1.0.0",
+    "description": "Chusmeator - A location-based sharing app",
+    "main": "index.js",
+    "scripts": {
+        "dev": "concurrently -n \"frontend,backend\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run dev --prefix frontend\" \"cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload\"",
+        "install:all": "npm install --prefix frontend && cd backend && uv sync"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

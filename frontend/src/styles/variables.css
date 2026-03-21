@@ -1,0 +1,27 @@
+:root {
+    /* Premium Color Palette */
+    --primary: #1e293b;
+    --primary-light: #334155;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --text-secondary: #64748b;
+    --pin-color: #ef4444;
+    --area-blue: rgba(59, 130, 246, 0.4);
+    --area-green: rgba(34, 197, 94, 0.4);
+    --area-red: rgba(239, 68, 68, 0.4);
+
+    /* Typography */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease-in-out;
+    --transition-normal: 0.3s ease-in-out;
+}
