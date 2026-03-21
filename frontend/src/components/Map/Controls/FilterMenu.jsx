@@ -2,6 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import './FilterMenu.css';
 
+const CATEGORIES = {
+    crime: { label: 'Crime / Delinquency', icon: '🔫' },
+    alcohol: { label: 'Alcohol / Partying', icon: '🍺' },
+    screaming: { label: 'Screaming / Disturbances', icon: '😱' },
+    loud_music: { label: 'Loud Music', icon: '🎵' },
+    traffic: { label: 'Traffic / Noise', icon: '🚗' },
+    poor_lighting: { label: 'Poor Lighting', icon: '💡' },
+    dirty: { label: 'Dirty / Trash', icon: '🗑️' },
+    construction: { label: 'Construction / Roadworks', icon: '🚧' },
+    dangerous_animals: { label: 'Dangerous Animals', icon: '🐕' },
+    general_warning: { label: 'General Warning', icon: '⚠️' },
+};
+
 const FilterMenu = ({ filters, onFiltersChange, onClose, availableYears }) => {
     const [localFilters, setLocalFilters] = useState(JSON.parse(JSON.stringify(filters)));
     const overlayRef = useRef(null);
@@ -20,6 +33,13 @@ const FilterMenu = ({ filters, onFiltersChange, onClose, availableYears }) => {
         }));
     };
 
+    const handleCategoryChange = (type, category) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            [type]: { ...prev[type], category }
+        }));
+    };
+
     const handleDateChange = (type, field, value) => {
         setLocalFilters(prev => ({
             ...prev,
@@ -29,8 +49,8 @@ const FilterMenu = ({ filters, onFiltersChange, onClose, availableYears }) => {
 
     const handleReset = () => {
         const resetFilters = {
-            pins: { color: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' },
-            areas: { color: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' }
+            pins: { color: 'all', category: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' },
+            areas: { color: 'all', category: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' }
         };
         setLocalFilters(resetFilters);
     };
@@ -80,6 +100,33 @@ const FilterMenu = ({ filters, onFiltersChange, onClose, availableYears }) => {
                             </div>
                         ))}
                     </div>
+                </div>
+
+                <div className="filter-row">
+                    <label>Category</label>
+                    <select
+                        className="category-filter-select"
+                        value={localFilters[type].category || 'all'}
+                        onChange={(e) => handleCategoryChange(type, e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            fontSize: '14px',
+                            background: 'rgba(255,255,255,0.08)',
+                            color: 'inherit',
+                            outline: 'none',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CATEGORIES).map(([key, cat]) => (
+                            <option key={key} value={key}>
+                                {cat.icon} {cat.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="filter-row">

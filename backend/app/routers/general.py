@@ -1,4 +1,4 @@
-"""API router for general endpoints (user, map-data, search)."""
+"""API router for general endpoints (user, map-data, search, categories)."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -10,7 +10,7 @@ from app.config import settings
 from app.services.pin_service import PinService
 from app.services.area_service import AreaService
 from app.services.vote_service import VoteService
-from app.services.comment_service import CommentService
+from app.models import CATEGORY_LABELS, CATEGORY_ICONS, CategoryType
 
 router = APIRouter(prefix="/api", tags=["General"])
 
@@ -21,36 +21,47 @@ def get_user_id(user_id: str = Depends(get_current_user_id)):
     return schemas.UserIdResponse(user_id=user_id)
 
 
+@router.get("/categories", response_model=List[schemas.CategoryInfo])
+def get_categories():
+    """Get all available categories with labels and icons."""
+    return [
+        schemas.CategoryInfo(
+            slug=cat.value,
+            label=CATEGORY_LABELS[cat],
+            icon=CATEGORY_ICONS[cat]
+        )
+        for cat in CategoryType
+    ]
+
+
 @router.get("/map-data", response_model=schemas.MapData)
 def get_map_data(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Get all map data (pins and areas) with vote counts."""
+    """Get all map data (pins and areas) with vote color counts."""
     # Vote aggregations
-    pin_votes = VoteService.get_vote_counts(db, "pin")
-    area_votes = VoteService.get_vote_counts(db, "area")
-    pin_user_vote_values = VoteService.get_user_vote_values(db, "pin", user_id)
-    area_user_vote_values = VoteService.get_user_vote_values(db, "area", user_id)
-
-    # Comment counts
-    pin_comments = CommentService.get_comment_counts(db, "pin")
-    area_comments = CommentService.get_comment_counts(db, "area")
+    pin_vote_colors = VoteService.get_vote_color_counts(db, "pin")
+    area_vote_colors = VoteService.get_vote_color_counts(db, "area")
+    pin_user_votes = VoteService.get_user_vote_colors(db, "pin", user_id)
+    area_user_votes = VoteService.get_user_vote_colors(db, "area", user_id)
 
     # Get all pins
     pins = PinService.get_all_pins(db)
+    default_vote_colors = {"red": 0, "blue": 0, "green": 0}
+    
     pin_list = [
         schemas.Pin(
             id=pin.id,
             lat=pin.lat,
             lng=pin.lng,
-            text=pin.text,
+            category=pin.category,
             color=pin.color,
+            original_color=pin.original_color,
             user_id=pin.user_id,
             created_at=pin.created_at,
-            votes=pin_votes.get(pin.id, 0),
-            user_vote_value=pin_user_vote_values.get(pin.id, 0),
-            comment_count=pin_comments.get(pin.id, 0),
+            vote_colors=pin_vote_colors.get(pin.id, dict(default_vote_colors)),
+            user_vote_color=pin_user_votes.get(pin.id),
         )
         for pin in pins
     ]
@@ -62,13 +73,13 @@ def get_map_data(
             id=area.id,
             latlngs=area.latlngs,
             color=area.color,
-            text=area.text,
+            original_color=area.original_color,
+            category=area.category,
             font_size=area.font_size,
             user_id=area.user_id,
             created_at=area.created_at,
-            votes=area_votes.get(area.id, 0),
-            user_vote_value=area_user_vote_values.get(area.id, 0),
-            comment_count=area_comments.get(area.id, 0),
+            vote_colors=area_vote_colors.get(area.id, dict(default_vote_colors)),
+            user_vote_color=area_user_votes.get(area.id),
         )
         for area in areas
     ]

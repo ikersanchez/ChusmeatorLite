@@ -8,7 +8,7 @@ import logging
 import os
 from app.config import settings
 from app.database import init_db
-from app.routers import pins, areas, general, votes, comments, admin
+from app.routers import pins, areas, general, votes, admin
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Chusmeator API",
     description="Backend API for Chusmeator interactive map application",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # Add Session Middleware
@@ -47,7 +47,6 @@ app.include_router(pins.router)
 app.include_router(areas.router)
 
 app.include_router(votes.router)
-app.include_router(comments.router)
 app.include_router(admin.router)
 
 # Mount static files
@@ -58,7 +57,8 @@ if os.path.exists(static_dir):
 @app.on_event("startup")
 def startup_event():
     """Initialize database on startup."""
-    init_db()
+    if not os.environ.get("TESTING"):
+        init_db()
 
 
 

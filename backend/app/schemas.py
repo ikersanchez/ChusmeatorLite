@@ -1,9 +1,9 @@
 """Pydantic schemas matching the OpenAPI specification."""
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
-from app.models import PinColor
+from app.models import PinColor, CategoryType
 
 
 class BaseSchema(BaseModel):
@@ -20,7 +20,7 @@ class PinCreate(BaseModel):
     """Schema for creating a new pin."""
     lat: float = Field(..., description="Latitude coordinate")
     lng: float = Field(..., description="Longitude coordinate")
-    text: str = Field(..., max_length=35, description="Pin description text")
+    category: CategoryType = Field(..., description="Pin category")
     color: PinColor = PinColor.BLUE
 
 
@@ -28,9 +28,8 @@ class PinUpdate(BaseModel):
     """Schema for updating an existing pin."""
     lat: Optional[float] = Field(None, description="Latitude coordinate")
     lng: Optional[float] = Field(None, description="Longitude coordinate")
-    text: Optional[str] = Field(None, max_length=35, description="Pin description text")
+    category: Optional[CategoryType] = None
     color: Optional[PinColor] = None
-
 
 
 class Pin(BaseSchema):
@@ -38,13 +37,13 @@ class Pin(BaseSchema):
     id: int
     lat: float
     lng: float
-    text: str
+    category: str
     color: str
+    original_color: str
     user_id: str
     created_at: datetime
-    votes: int = 0
-    user_vote_value: int = 0  # 0 = no vote, 1 = liked, -1 = disliked
-    comment_count: int = 0
+    vote_colors: Dict[str, int] = {"red": 0, "blue": 0, "green": 0}
+    user_vote_color: Optional[str] = None  # None = no vote, or "red"/"blue"/"green"
 
 
 # Area Schemas
@@ -52,7 +51,7 @@ class AreaCreate(BaseSchema):
     """Schema for creating a new area."""
     latlngs: List[Any]  # Flexible for different Leaflet structures
     color: PinColor
-    text: str = Field(..., max_length=35)
+    category: CategoryType
     font_size: str
 
 
@@ -60,9 +59,8 @@ class AreaUpdate(BaseSchema):
     """Schema for updating an existing area."""
     latlngs: Optional[List[Any]] = None
     color: Optional[PinColor] = None
-    text: Optional[str] = Field(None, max_length=35)
+    category: Optional[CategoryType] = None
     font_size: Optional[str] = None
-
 
 
 class Area(BaseSchema):
@@ -70,13 +68,13 @@ class Area(BaseSchema):
     id: int
     latlngs: List[Any]
     color: str
-    text: str
+    original_color: str
+    category: str
     font_size: str
     user_id: str
     created_at: datetime
-    votes: int = 0
-    user_vote_value: int = 0  # 0 = no vote, 1 = liked, -1 = disliked
-    comment_count: int = 0
+    vote_colors: Dict[str, int] = {"red": 0, "blue": 0, "green": 0}
+    user_vote_color: Optional[str] = None
 
 
 # Map Data Schema
@@ -115,17 +113,10 @@ class SuccessResponse(BaseModel):
 
 # Vote Schemas
 class VoteCreate(BaseSchema):
-    """Schema for creating a vote."""
+    """Schema for creating a color vote."""
     target_type: str = Field(..., pattern="^(pin|area)$")
     target_id: int
-    value: int = Field(default=1, description="1 = like, -1 = dislike")
-
-    @field_validator('value')
-    @classmethod
-    def value_must_be_plus_or_minus_one(cls, v):
-        if v not in (1, -1):
-            raise ValueError('value must be 1 (like) or -1 (dislike)')
-        return v
+    vote_color: PinColor = Field(..., description="Color to vote: red, blue, or green")
 
 
 class VoteResponse(BaseSchema):
@@ -134,21 +125,13 @@ class VoteResponse(BaseSchema):
     user_id: str
     target_type: str
     target_id: int
-    value: int
+    vote_color: str
     created_at: datetime
 
 
-# Comment Schemas
-class CommentCreate(BaseModel):
-    """Schema for creating a comment on a pin."""
-    text: str = Field(..., max_length=100, description="Comment text (max 100 characters)")
-
-
-class Comment(BaseSchema):
-    """Schema for a comment response."""
-    id: int
-    target_type: str
-    target_id: int
-    user_id: str
-    text: str
-    created_at: datetime
+# Categories list endpoint
+class CategoryInfo(BaseModel):
+    """Schema for category information."""
+    slug: str
+    label: str
+    icon: str

@@ -21,8 +21,6 @@ const apiFetch = async (endpoint, options = {}) => {
             const errorData = await response.json().catch(() => ({}));
             const msg = errorData.error || errorData.detail || `API error: ${response.status}`;
             console.error(`API Error: ${msg}`, errorData);
-            // In a real app, we would push this to a notification state/context
-            // For now, we'll just throw and let the component handle it or log it
             throw new Error(msg);
         }
 
@@ -49,6 +47,11 @@ export const api = {
     // Get all map data (pins, areas)
     getMapData: async () => {
         return apiFetch('/map-data');
+    },
+
+    // Get available categories
+    getCategories: async () => {
+        return apiFetch('/categories');
     },
 
     // Save a new pin
@@ -104,11 +107,11 @@ export const api = {
         return results;
     },
 
-    // Vote on a pin or area (value: 1 = like, -1 = dislike)
-    vote: async (targetType, targetId, value = 1) => {
+    // Vote a color on a pin or area (voteColor: "red", "blue", or "green")
+    vote: async (targetType, targetId, voteColor) => {
         return apiFetch('/votes', {
             method: 'POST',
-            body: JSON.stringify({ targetType, targetId, value }),
+            body: JSON.stringify({ targetType, targetId, voteColor }),
         });
     },
 
@@ -116,32 +119,6 @@ export const api = {
     unvote: async (targetType, targetId) => {
         return apiFetch(`/votes/${targetType}/${targetId}`, {
             method: 'DELETE',
-        });
-    },
-
-    // Get comments for a pin
-    getPinComments: async (pinId) => {
-        return apiFetch(`/pins/${pinId}/comments`);
-    },
-
-    // Add a comment to a pin
-    addPinComment: async (pinId, text) => {
-        return apiFetch(`/pins/${pinId}/comments`, {
-            method: 'POST',
-            body: JSON.stringify({ text }),
-        });
-    },
-
-    // Get comments for an area
-    getAreaComments: async (areaId) => {
-        return apiFetch(`/areas/${areaId}/comments`);
-    },
-
-    // Add a comment to an area
-    addAreaComment: async (areaId, text) => {
-        return apiFetch(`/areas/${areaId}/comments`, {
-            method: 'POST',
-            body: JSON.stringify({ text }),
         });
     },
 };

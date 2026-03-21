@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app import schemas
-from app.models import PinModel, AreaModel
+from app.models import PinModel, AreaModel, VoteModel
 from app.database import get_db
 from app.dependencies import ensure_user_exists
 from app.services.vote_service import VoteService
@@ -22,7 +22,7 @@ def create_vote(
     user_id: str = Depends(ensure_user_exists),
     db: Session = Depends(get_db)
 ):
-    """Create a vote on a pin or area. One vote per user per item."""
+    """Create a color vote on a pin or area. One vote per user per item."""
     # Verify target exists
     model = TARGET_MODELS.get(vote_data.target_type)
     if not model:
@@ -31,6 +31,30 @@ def create_vote(
     target = db.query(model).filter(model.id == vote_data.target_id).first()
     if not target:
         raise HTTPException(status_code=404, detail=f"{vote_data.target_type.capitalize()} not found")
+
+    # Check if user already voted — if so, update the vote color
+    existing_vote = db.query(VoteModel).filter(
+        VoteModel.user_id == user_id,
+        VoteModel.target_type == vote_data.target_type,
+        VoteModel.target_id == vote_data.target_id
+    ).first()
+
+    vote_color = vote_data.vote_color.value if hasattr(vote_data.vote_color, 'value') else vote_data.vote_color
+
+    if existing_vote:
+        if existing_vote.vote_color == vote_color:
+            # Same color clicked — remove vote (toggle off)
+            db.delete(existing_vote)
+            db.commit()
+            VoteService.update_target_color(db, vote_data.target_type, vote_data.target_id)
+            raise HTTPException(status_code=200, detail="Vote removed")
+        else:
+            # Different color — update existing vote
+            existing_vote.vote_color = vote_color
+            db.commit()
+            db.refresh(existing_vote)
+            VoteService.update_target_color(db, vote_data.target_type, vote_data.target_id)
+            return existing_vote
 
     try:
         db_vote = VoteService.create_vote(db, vote_data, user_id)

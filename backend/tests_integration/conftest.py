@@ -3,10 +3,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.main import app
+import app.main as app_main
+app_main.init_db = lambda: None  # Disable PG init during tests
 from app.database import Base, get_db
+from app.models import PinModel, AreaModel, VoteModel, User  # Required for Base.metadata to find tables
 import os
 
 # Use a separate SQLite file for integration testing
+os.environ["TESTING"] = "1"
 TEST_DB_PATH = "./test_integration.db"
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
 
