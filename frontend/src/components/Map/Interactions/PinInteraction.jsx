@@ -3,29 +3,50 @@ import { Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '../../../api/apiService';
 
-// Create a custom SVG icon for pins with dynamic colors
-const createColoredIcon = (color) => {
-    // Map our semantic colors to hex values for the SVG
+// Category definitions with labels and SVG paths for pin icons
+const CATEGORIES = {
+    crime: { label: 'Crime / Delinquency', icon: '🔫', svgPath: 'M17 2h-2V0h-2v2H9V0H7v2H5a2 2 0 00-2 2v2h18V4a2 2 0 00-2-2zM3 8v10a2 2 0 002 2h14a2 2 0 002-2V8H3zm4 8H5v-2h2v2zm0-4H5v-2h2v2zm4 4H9v-2h2v2zm0-4H9v-2h2v2zm4 4h-2v-2h2v2zm4-4h-2v-2h2v2z' },
+    alcohol: { label: 'Alcohol / Partying', icon: '🍺', svgPath: 'M8 2L6 14h12l-2-12H8zM6 16v2h12v-2H6zM11 6v6m-2-4h4' },
+    screaming: { label: 'Screaming / Disturbances', icon: '😱', svgPath: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-10c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm6 0c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm-3 5.5c-1.66 0-3-1.12-3-2.5h6c0 1.38-1.34 2.5-3 2.5z' },
+    loud_music: { label: 'Loud Music', icon: '🎵', svgPath: 'M12 3v10.55A4 4 0 1014 17V7h4V3h-6zM10 19a2 2 0 110-4 2 2 0 010 4z' },
+    traffic: { label: 'Traffic / Noise', icon: '🚗', svgPath: 'M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z' },
+    poor_lighting: { label: 'Poor Lighting', icon: '💡', svgPath: 'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z' },
+    dirty: { label: 'Dirty / Trash', icon: '🗑️', svgPath: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' },
+    construction: { label: 'Construction / Roadworks', icon: '🚧', svgPath: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' },
+    dangerous_animals: { label: 'Dangerous Animals', icon: '🐕', svgPath: 'M4.5 11.5c0 2 1.5 3.5 3.5 3.5h1v4h2v-4h2v4h2v-4h1c2 0 3.5-1.5 3.5-3.5V10H4.5v1.5zM12 3C9.5 3 7.5 4 6.5 5.5L5 7h14l-1.5-1.5C16.5 4 14.5 3 12 3zm-2 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z' },
+    general_warning: { label: 'General Warning', icon: '⚠️', svgPath: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' },
+};
+
+// Create a custom SVG icon for pins with category-specific shapes
+const createCategoryIcon = (category, color) => {
     const colorMap = {
         blue: '#3b82f6',
         green: '#22c55e',
         red: '#ef4444'
     };
     const fill = colorMap[color] || colorMap.blue;
+    const cat = CATEGORIES[category] || CATEGORIES.general_warning;
 
     const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="25" height="41">
-            <path fill="${fill}" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="36" height="47">
+            <defs>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/>
+                </filter>
+            </defs>
+            <path fill="${fill}" filter="url(#shadow)" d="M20 0C9 0 0 9 0 20c0 11 20 32 20 32s20-21 20-32C40 9 31 0 20 0z"/>
+            <circle cx="20" cy="18" r="13" fill="white" opacity="0.9"/>
+            <text x="20" y="24" text-anchor="middle" font-size="16" dominant-baseline="middle">${cat.icon}</text>
         </svg>
     `;
 
     return L.divIcon({
         className: 'custom-pin-icon',
         html: svg,
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [0, -41],
-        tooltipAnchor: [12, -28]
+        iconSize: [36, 47],
+        iconAnchor: [18, 47],
+        popupAnchor: [0, -47],
+        tooltipAnchor: [18, -34]
     });
 };
 
@@ -33,18 +54,11 @@ const VOTE_THRESHOLD_PERMANENT_LABEL = 5;
 
 const PinInteraction = ({ mode, filters, pins, setPins }) => {
     const [newPin, setNewPin] = useState(null);
-    const [editingPin, setEditingPin] = useState(null); // ID of pin being edited
-    const [formData, setFormData] = useState('');
+    const [editingPin, setEditingPin] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedColor, setSelectedColor] = useState('blue');
     const [currentUserId, setCurrentUserId] = useState('');
     const [error, setError] = useState(null);
-
-    // Comments state
-    const [commentsVisibleForPin, setCommentsVisibleForPin] = useState(null);
-    const [pinComments, setPinComments] = useState({});
-    const [newCommentText, setNewCommentText] = useState('');
-    const [loadingComments, setLoadingComments] = useState(false);
-    const [commentError, setCommentError] = useState(null);
 
     // Ref for stopping leaflet propagation
     const modalRef = useRef(null);
@@ -57,6 +71,11 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                 return false;
             }
             if (filters.color !== 'all' && pin.color !== filters.color) {
+                return false;
+            }
+
+            // Category filter
+            if (filters.category && filters.category !== 'all' && pin.category !== filters.category) {
                 return false;
             }
 
@@ -99,33 +118,31 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
     // Handle map clicks to drop a temporary pin (only in PIN mode)
     useMapEvents({
         click(e) {
-            // FIX: If newPin already exists, don't drop a new one or reset form.
-            // This prevented saving on mobile when clicks leaked through.
             if (mode !== 'PIN' || newPin || editingPin) return;
 
             setNewPin({
                 lat: e.latlng.lat,
                 lng: e.latlng.lng,
             });
-            setFormData(''); // Reset form
+            setSelectedCategory('');
             setError(null);
         },
     });
 
     const handleSave = async (e) => {
         if (e) e.preventDefault();
-        if (!newPin || !formData.trim()) return;
+        if (!newPin || !selectedCategory) return;
 
         try {
             const savedPin = await api.savePin({
                 lat: newPin.lat,
                 lng: newPin.lng,
-                text: formData,
+                category: selectedCategory,
                 color: selectedColor,
             });
 
             setPins([...pins, savedPin]);
-            setNewPin(null); // Clear temp pin
+            setNewPin(null);
             setError(null);
         } catch (err) {
             console.error('Save pin error:', err);
@@ -135,19 +152,19 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
 
     const handleUpdate = async (e) => {
         if (e) e.preventDefault();
-        if (!editingPin || !formData.trim()) return;
+        if (!editingPin || !selectedCategory) return;
 
         try {
             const pinToUpdate = pins.find(p => p.id === editingPin);
             const updatedPin = await api.updatePin(editingPin, {
                 lat: pinToUpdate.lat,
                 lng: pinToUpdate.lng,
-                text: formData,
+                category: selectedCategory,
                 color: selectedColor,
             });
 
             setPins(pins.map(p => p.id === editingPin
-                ? { ...updatedPin, votes: p.votes, userVoteValue: p.userVoteValue, commentCount: p.commentCount }
+                ? { ...updatedPin, voteColors: p.voteColors, userVoteColor: p.userVoteColor }
                 : p
             ));
             setEditingPin(null);
@@ -173,23 +190,40 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
         }
     };
 
-    const handleVote = async (pin, value) => {
+    const handleColorVote = async (pin, voteColor) => {
         try {
-            const currentValue = pin.userVoteValue || 0;
-            if (currentValue === value) {
-                // Clicking the same button again removes the vote
+            const currentVote = pin.userVoteColor;
+            if (currentVote === voteColor) {
+                // Same color — remove vote
                 await api.unvote('pin', pin.id);
+                const newVoteColors = { ...pin.voteColors };
+                newVoteColors[voteColor] = Math.max(0, (newVoteColors[voteColor] || 0) - 1);
                 setPins(pins.map(p =>
-                    p.id === pin.id ? { ...p, votes: p.votes - value, userVoteValue: 0 } : p
+                    p.id === pin.id ? { ...p, voteColors: newVoteColors, userVoteColor: null } : p
                 ));
             } else {
-                // If switching from opposite vote, remove old vote first
-                if (currentValue !== 0) {
-                    await api.unvote('pin', pin.id);
+                // New vote or change
+                try {
+                    await api.vote('pin', pin.id, voteColor);
+                } catch (e) {
+                    // 200 means vote was toggled off (shouldn't happen here but handle it)
+                    if (e.message && e.message.includes('Vote removed')) {
+                        const newVoteColors = { ...pin.voteColors };
+                        newVoteColors[voteColor] = Math.max(0, (newVoteColors[voteColor] || 0) - 1);
+                        setPins(pins.map(p =>
+                            p.id === pin.id ? { ...p, voteColors: newVoteColors, userVoteColor: null } : p
+                        ));
+                        return;
+                    }
+                    throw e;
                 }
-                await api.vote('pin', pin.id, value);
+                const newVoteColors = { ...pin.voteColors };
+                if (currentVote) {
+                    newVoteColors[currentVote] = Math.max(0, (newVoteColors[currentVote] || 0) - 1);
+                }
+                newVoteColors[voteColor] = (newVoteColors[voteColor] || 0) + 1;
                 setPins(pins.map(p =>
-                    p.id === pin.id ? { ...p, votes: p.votes - currentValue + value, userVoteValue: value } : p
+                    p.id === pin.id ? { ...p, voteColors: newVoteColors, userVoteColor: voteColor } : p
                 ));
             }
         } catch (error) {
@@ -197,55 +231,58 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
         }
     };
 
-    const handleToggleComments = async (pinId) => {
-        if (commentsVisibleForPin === pinId) {
-            // Close comments
-            setCommentsVisibleForPin(null);
-            return;
-        }
-
-        // Open comments and fetch
-        setCommentsVisibleForPin(pinId);
-        setNewCommentText('');
-        setCommentError(null);
-
-        if (!pinComments[pinId]) {
-            setLoadingComments(true);
-            try {
-                const comments = await api.getPinComments(pinId);
-                setPinComments(prev => ({ ...prev, [pinId]: comments }));
-            } catch (error) {
-                console.error('Error fetching comments:', error);
-            } finally {
-                setLoadingComments(false);
-            }
-        }
+    const getVoteTotal = (pin) => {
+        const vc = pin.voteColors || {};
+        return (vc.red || 0) + (vc.blue || 0) + (vc.green || 0);
     };
 
-    const handleAddComment = async (e, pinId) => {
-        e.preventDefault();
-        if (!newCommentText.trim() || newCommentText.length > 100) return;
+    const getVotePercentage = (pin, color) => {
+        const total = getVoteTotal(pin);
+        if (total === 0) return 0;
+        return Math.round(((pin.voteColors?.[color] || 0) / total) * 100);
+    };
 
-        try {
-            const addedComment = await api.addPinComment(pinId, newCommentText);
-            setPinComments(prev => ({
-                ...prev,
-                [pinId]: [addedComment, ...(prev[pinId] || [])]
-            }));
-            
-            // Increment comment counter without refreshing
-            setPins(prevPins => prevPins.map(p => 
-                p.id === pinId 
-                    ? { ...p, commentCount: (p.commentCount || 0) + 1 } 
-                    : p
-            ));
-            
-            setNewCommentText('');
-            setCommentError(null);
-        } catch (error) {
-            console.error('Error adding comment:', error);
-            setCommentError(error.message || 'Failed to post comment.');
-        }
+    const getCategoryLabel = (category) => {
+        return CATEGORIES[category]?.label || category;
+    };
+
+    const getCategoryIcon = (category) => {
+        return CATEGORIES[category]?.icon || '⚠️';
+    };
+
+    const VoteColorButton = ({ pin, color }) => {
+        const colorMap = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444' };
+        const isActive = pin.userVoteColor === color;
+        const pct = getVotePercentage(pin, color);
+        const count = pin.voteColors?.[color] || 0;
+        return (
+            <div
+                onClick={(e) => { e.stopPropagation(); handleColorVote(pin, color); }}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    gap: '2px',
+                }}
+            >
+                <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: colorMap[color],
+                    border: isActive ? '3px solid var(--text)' : '2px solid rgba(0,0,0,0.15)',
+                    transition: 'all 0.2s ease',
+                    transform: isActive ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow: isActive ? `0 0 8px ${colorMap[color]}66` : 'none',
+                }} />
+                <span style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    color: colorMap[color],
+                }}>{count} ({pct}%)</span>
+            </div>
+        );
     };
 
     const ColorButton = ({ c, label }) => (
@@ -273,61 +310,60 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
             {/* Existing saved pins */}
             {filteredPins.map((pin) => {
                 const isOwner = pin.userId === currentUserId;
-                const showPermanentLabel = pin.votes >= VOTE_THRESHOLD_PERMANENT_LABEL;
+                const totalVotes = getVoteTotal(pin);
+                const showPermanentLabel = totalVotes >= VOTE_THRESHOLD_PERMANENT_LABEL;
 
                 return (
                     <Marker
                         key={pin.id}
                         position={[pin.lat, pin.lng]}
-                        icon={createColoredIcon(pin.id === editingPin ? selectedColor : pin.color)}
+                        icon={createCategoryIcon(
+                            pin.category,
+                            pin.id === editingPin ? selectedColor : pin.color
+                        )}
                     >
                         {/* Show permanent tooltip for highly-voted pins */}
                         {showPermanentLabel && (
                             <Tooltip
                                 permanent
                                 direction="top"
-                                offset={[0, -40]}
+                                offset={[0, -46]}
                                 className="modern-tooltip"
                             >
                                 <div
                                     className="map-label-style"
                                     style={{ fontSize: '12px' }}
                                 >
-                                    {pin.text}
+                                    {getCategoryIcon(pin.category)} {getCategoryLabel(pin.category)}
                                 </div>
                             </Tooltip>
                         )}
 
                         <Popup className="premium-popup">
                             <div className="popup-content">
-                                <strong>Info:</strong> {pin.text} <br />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '1.3rem' }}>{getCategoryIcon(pin.category)}</span>
+                                    <strong>{getCategoryLabel(pin.category)}</strong>
+                                </div>
                                 <small style={{ color: '#666' }}>
                                     {new Date(pin.createdAt).toLocaleDateString()}
                                 </small>
 
-                                {/* Vote buttons and Comments button */}
-                                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <button
-                                        onClick={() => handleVote(pin, 1)}
-                                        className={`action-btn vote-btn ${pin.userVoteValue === 1 ? 'voted' : ''}`}
-                                    >
-                                        👍
-                                    </button>
-                                    <span style={{ fontWeight: 700, fontSize: '0.9rem', minWidth: '20px', textAlign: 'center', color: pin.votes > 0 ? '#22c55e' : pin.votes < 0 ? '#ef4444' : '#64748b' }}>
-                                        {pin.votes}
-                                    </span>
-                                    <button
-                                        onClick={() => handleVote(pin, -1)}
-                                        className={`action-btn vote-btn dislike-btn ${pin.userVoteValue === -1 ? 'disliked' : ''}`}
-                                    >
-                                        👎
-                                    </button>
-                                    <button
-                                        onClick={() => handleToggleComments(pin.id)}
-                                        className="action-btn comment-btn"
-                                    >
-                                        💬 Comments {pin.commentCount > 0 && `(${pin.commentCount})`}
-                                    </button>
+                                {/* Color vote buttons */}
+                                <div style={{ marginTop: '10px' }}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                                        Vote Color
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', justifyContent: 'center' }}>
+                                        <VoteColorButton pin={pin} color="red" />
+                                        <VoteColorButton pin={pin} color="blue" />
+                                        <VoteColorButton pin={pin} color="green" />
+                                    </div>
+                                    {totalVotes > 0 && (
+                                        <div style={{ fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center', marginTop: '4px' }}>
+                                            {totalVotes} total vote{totalVotes !== 1 ? 's' : ''}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isOwner && (
@@ -349,7 +385,7 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                         <button
                                             onClick={() => {
                                                 setEditingPin(pin.id);
-                                                setFormData(pin.text);
+                                                setSelectedCategory(pin.category);
                                                 setSelectedColor(pin.color);
                                             }}
                                             style={{
@@ -367,99 +403,16 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                         </button>
                                     </div>
                                 )}
-
-                                {/* Comments Section */}
-                                {commentsVisibleForPin === pin.id && (
-                                    <div className="comments-section" style={{ marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Comments</h4>
-
-                                        <div className="comments-list" style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '8px' }}>
-                                            {loadingComments ? (
-                                                <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center' }}>Loading...</div>
-                                            ) : pinComments[pin.id]?.length > 0 ? (
-                                                pinComments[pin.id].map(comment => (
-                                                    <div key={comment.id} style={{
-                                                        background: '#f9fafb',
-                                                        padding: '6px 8px',
-                                                        borderRadius: '6px',
-                                                        marginBottom: '6px',
-                                                        fontSize: '0.85rem'
-                                                    }}>
-                                                        <div style={{ wordBreak: 'break-word' }}>{comment.text}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>
-                                                            {new Date(comment.createdAt).toLocaleDateString()} {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center', margin: '10px 0' }}>No comments yet.</div>
-                                            )}
-                                        </div>
-
-                                        {commentError && (
-                                            <div style={{
-                                                padding: '6px 8px',
-                                                marginBottom: '8px',
-                                                background: '#fef2f2',
-                                                color: '#b91c1c',
-                                                border: '1px solid #fecaca',
-                                                borderRadius: '6px',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                {commentError}
-                                            </div>
-                                        )}
-
-                                        <form onSubmit={(e) => handleAddComment(e, pin.id)} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            <input
-                                                type="text"
-                                                value={newCommentText}
-                                                onChange={(e) => setNewCommentText(e.target.value)}
-                                                placeholder="Write a comment..."
-                                                maxLength={100}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #cbd5e1',
-                                                    fontSize: '16px',
-                                                    outline: 'none',
-                                                }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.7rem', color: newCommentText.length >= 100 ? '#ef4444' : '#9ca3af' }}>
-                                                    {newCommentText.length}/100
-                                                </span>
-                                                <button
-                                                    type="submit"
-                                                    disabled={!newCommentText.trim() || newCommentText.length > 100}
-                                                    style={{
-                                                        padding: '4px 10px',
-                                                        background: 'var(--accent)',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '6px',
-                                                        cursor: !newCommentText.trim() || newCommentText.length > 100 ? 'not-allowed' : 'pointer',
-                                                        fontSize: '0.85rem',
-                                                        opacity: !newCommentText.trim() || newCommentText.length > 100 ? 0.5 : 1,
-                                                        fontWeight: '600',
-                                                    }}
-                                                >
-                                                    Post
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                )}
                             </div>
                         </Popup>
                     </Marker>
                 );
             })}
 
-            {/* Temporary pin being created or Pin being edited — use bottom sheet style — compact for mobile */}
+            {/* Temporary pin being created or Pin being edited — use bottom sheet style */}
             {(newPin || editingPin) && (
                 <>
-                    {newPin && <Marker position={[newPin.lat, newPin.lng]} icon={createColoredIcon(selectedColor)} />}
+                    {newPin && <Marker position={[newPin.lat, newPin.lng]} icon={createCategoryIcon(selectedCategory || 'general_warning', selectedColor)} />}
 
                     <div
                         ref={modalRef}
@@ -517,27 +470,39 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                 </div>
                             </div>
 
-                            <textarea
-                                value={formData}
-                                onChange={(e) => setFormData(e.target.value)}
-                                placeholder="e.g. 'Best Coffee'..."
-                                maxLength={35}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    marginBottom: '6px',
-                                    borderRadius: '10px',
-                                    border: '1px solid rgba(0,0,0,0.1)',
-                                    fontSize: '16px',
-                                    background: 'rgba(0,0,0,0.02)',
-                                    boxSizing: 'border-box',
-                                    outline: 'none',
-                                    minHeight: '64px',
-                                    fontFamily: 'inherit',
-                                    resize: 'none',
-                                }}
-                                autoFocus
-                            />
+                            <div style={{ marginBottom: '10px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                                    Category
+                                </label>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        borderRadius: '10px',
+                                        border: '1px solid rgba(0,0,0,0.1)',
+                                        fontSize: '16px',
+                                        background: 'rgba(0,0,0,0.02)',
+                                        boxSizing: 'border-box',
+                                        outline: 'none',
+                                        appearance: 'none',
+                                        WebkitAppearance: 'none',
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px center',
+                                        paddingRight: '32px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <option value="" disabled>Select a category...</option>
+                                    {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                        <option key={key} value={key}>
+                                            {cat.icon} {cat.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'right' }}>
                                 Get <strong>5 votes</strong> to make it permanent!
@@ -563,18 +528,18 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!formData.trim()}
+                                    disabled={!selectedCategory}
                                     style={{
                                         flex: 2,
                                         padding: '10px',
-                                        background: !formData.trim() ? '#ccc' : 'var(--accent)',
+                                        background: !selectedCategory ? '#ccc' : 'var(--accent)',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: '10px',
-                                        cursor: !formData.trim() ? 'not-allowed' : 'pointer',
+                                        cursor: !selectedCategory ? 'not-allowed' : 'pointer',
                                         fontWeight: 'bold',
                                         fontSize: '14px',
-                                        boxShadow: !formData.trim() ? 'none' : '0 2px 10px rgba(59,130,246,0.3)',
+                                        boxShadow: !selectedCategory ? 'none' : '0 2px 10px rgba(59,130,246,0.3)',
                                     }}
                                 >
                                     {editingPin ? 'Save Changes' : 'Save Pin'}

@@ -31,8 +31,8 @@ const ChusmeatorMap = () => {
     const center = [40.4168, -3.7038]; // Madrid default
     const [interactionMode, setInteractionMode] = useState('VIEW');
     const [filters, setFilters] = useState({
-        pins: { color: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' },
-        areas: { color: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' }
+        pins: { color: 'all', category: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' },
+        areas: { color: 'all', category: 'all', startMonth: '', startYear: '', endMonth: '', endYear: '' }
     });
 
     const [pins, setPins] = useState([]);

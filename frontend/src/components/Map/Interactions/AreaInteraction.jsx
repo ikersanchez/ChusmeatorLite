@@ -4,11 +4,25 @@ import L from 'leaflet';
 import { api } from '../../../api/apiService';
 import * as turf from '@turf/turf';
 
+// Category definitions (same as PinInteraction)
+const CATEGORIES = {
+    crime: { label: 'Crime / Delinquency', icon: '🔫' },
+    alcohol: { label: 'Alcohol / Partying', icon: '🍺' },
+    screaming: { label: 'Screaming / Disturbances', icon: '😱' },
+    loud_music: { label: 'Loud Music', icon: '🎵' },
+    traffic: { label: 'Traffic / Noise', icon: '🚗' },
+    poor_lighting: { label: 'Poor Lighting', icon: '💡' },
+    dirty: { label: 'Dirty / Trash', icon: '🗑️' },
+    construction: { label: 'Construction / Roadworks', icon: '🚧' },
+    dangerous_animals: { label: 'Dangerous Animals', icon: '🐕' },
+    general_warning: { label: 'General Warning', icon: '⚠️' },
+};
+
 const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const [currentLayer, setCurrentLayer] = useState(null);
-    const [editingArea, setEditingArea] = useState(null); // ID of area being edited
+    const [editingArea, setEditingArea] = useState(null);
     const [color, setColor] = useState('blue');
-    const [text, setText] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
     const [isDrawing, setIsDrawing] = useState(false);
     const [error, setError] = useState(null);
     const MAX_AREA_SIZE_DEG = 0.02;
@@ -18,13 +32,6 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const [isManualDrawing, setIsManualDrawing] = useState(false);
 
     const [currentUserId, setCurrentUserId] = useState('');
-
-    // Comments state
-    const [commentsVisibleForArea, setCommentsVisibleForArea] = useState(null);
-    const [areaComments, setAreaComments] = useState({});
-    const [newCommentText, setNewCommentText] = useState('');
-    const [loadingComments, setLoadingComments] = useState(false);
-    const [commentError, setCommentError] = useState(null);
 
     const map = useMap();
     
@@ -40,6 +47,11 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                 return false;
             }
             if (filters.color !== 'all' && area.color !== filters.color) {
+                return false;
+            }
+
+            // Category filter
+            if (filters.category && filters.category !== 'all' && area.category !== filters.category) {
                 return false;
             }
 
@@ -158,7 +170,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const handleSave = async (e) => {
         e.preventDefault();
         setError(null);
-        if (!currentLayer || !text) return;
+        if (!currentLayer || !selectedCategory) return;
 
         let latlngs;
         let latDiff, lngDiff;
@@ -192,7 +204,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
         const newArea = {
             latlngs,
             color,
-            text,
+            category: selectedCategory,
             fontSize,
         };
 
@@ -207,7 +219,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
             setCurrentLayer(null);
             setIsDrawing(false);
             setDrawPoints([]);
-            setText('');
+            setSelectedCategory('');
             setError(null);
         } catch (err) {
             console.error('Save area error:', err);
@@ -218,19 +230,17 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         setError(null);
-        if (!editingArea || !text) return;
+        if (!editingArea || !selectedCategory) return;
 
-        const areaToUpdate = areas.find(a => a.id === editingArea);
-        
         const updatedAreaPayload = {
             color,
-            text
+            category: selectedCategory,
         };
 
         try {
             const updatedArea = await api.updateArea(editingArea, updatedAreaPayload);
             setAreas(areas.map(a => a.id === editingArea
-                ? { ...updatedArea, votes: a.votes, userVoteValue: a.userVoteValue, commentCount: a.commentCount }
+                ? { ...updatedArea, voteColors: a.voteColors, userVoteColor: a.userVoteColor }
                 : a
             ));
 
@@ -239,7 +249,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
             setIsDrawing(false);
             setEditingArea(null);
             setDrawPoints([]);
-            setText('');
+            setSelectedCategory('');
             setError(null);
         } catch (err) {
             console.error('Update area error:', err);
@@ -254,7 +264,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
         setCurrentLayer(null);
         setIsDrawing(false);
         setDrawPoints([]);
-        setText('');
+        setSelectedCategory('');
         setEditingArea(null);
         setError(null);
         // Re-enter drawing mode
@@ -262,8 +272,6 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
             setIsManualDrawing(true);
         }
     };
-
-
 
     const handleDelete = async (areaId) => {
         try {
@@ -274,23 +282,38 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
         }
     };
 
-    const handleVote = async (area, value) => {
+    const handleColorVote = async (area, voteColor) => {
         try {
-            const currentValue = area.userVoteValue || 0;
-            if (currentValue === value) {
-                // Clicking the same button again removes the vote
+            const currentVote = area.userVoteColor;
+            if (currentVote === voteColor) {
+                // Same color — remove vote
                 await api.unvote('area', area.id);
+                const newVoteColors = { ...area.voteColors };
+                newVoteColors[voteColor] = Math.max(0, (newVoteColors[voteColor] || 0) - 1);
                 setAreas(areas.map(a =>
-                    a.id === area.id ? { ...a, votes: a.votes - value, userVoteValue: 0 } : a
+                    a.id === area.id ? { ...a, voteColors: newVoteColors, userVoteColor: null } : a
                 ));
             } else {
-                // If switching from opposite vote, remove old vote first
-                if (currentValue !== 0) {
-                    await api.unvote('area', area.id);
+                try {
+                    await api.vote('area', area.id, voteColor);
+                } catch (e) {
+                    if (e.message && e.message.includes('Vote removed')) {
+                        const newVoteColors = { ...area.voteColors };
+                        newVoteColors[voteColor] = Math.max(0, (newVoteColors[voteColor] || 0) - 1);
+                        setAreas(areas.map(a =>
+                            a.id === area.id ? { ...a, voteColors: newVoteColors, userVoteColor: null } : a
+                        ));
+                        return;
+                    }
+                    throw e;
                 }
-                await api.vote('area', area.id, value);
+                const newVoteColors = { ...area.voteColors };
+                if (currentVote) {
+                    newVoteColors[currentVote] = Math.max(0, (newVoteColors[currentVote] || 0) - 1);
+                }
+                newVoteColors[voteColor] = (newVoteColors[voteColor] || 0) + 1;
                 setAreas(areas.map(a =>
-                    a.id === area.id ? { ...a, votes: a.votes - currentValue + value, userVoteValue: value } : a
+                    a.id === area.id ? { ...a, voteColors: newVoteColors, userVoteColor: voteColor } : a
                 ));
             }
         } catch (error) {
@@ -298,53 +321,15 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
         }
     };
 
-    const handleToggleComments = async (areaId) => {
-        if (commentsVisibleForArea === areaId) {
-            setCommentsVisibleForArea(null);
-            return;
-        }
-
-        setCommentsVisibleForArea(areaId);
-        setNewCommentText('');
-        setCommentError(null);
-
-        if (!areaComments[areaId]) {
-            setLoadingComments(true);
-            try {
-                const comments = await api.getAreaComments(areaId);
-                setAreaComments(prev => ({ ...prev, [areaId]: comments }));
-            } catch (error) {
-                console.error('Error fetching comments:', error);
-            } finally {
-                setLoadingComments(false);
-            }
-        }
+    const getVoteTotal = (area) => {
+        const vc = area.voteColors || {};
+        return (vc.red || 0) + (vc.blue || 0) + (vc.green || 0);
     };
 
-    const handleAddComment = async (e, areaId) => {
-        e.preventDefault();
-        if (!newCommentText.trim() || newCommentText.length > 100) return;
-
-        try {
-            const addedComment = await api.addAreaComment(areaId, newCommentText);
-            setAreaComments(prev => ({
-                ...prev,
-                [areaId]: [addedComment, ...(prev[areaId] || [])]
-            }));
-            
-            // Increment comment counter without refreshing
-            setAreas(prevAreas => prevAreas.map(a => 
-                a.id === areaId 
-                    ? { ...a, commentCount: (a.commentCount || 0) + 1 } 
-                    : a
-            ));
-            
-            setNewCommentText('');
-            setCommentError(null);
-        } catch (error) {
-            console.error('Error adding comment:', error);
-            setCommentError(error.message || 'Failed to post comment.');
-        }
+    const getVotePercentage = (area, color) => {
+        const total = getVoteTotal(area);
+        if (total === 0) return 0;
+        return Math.round(((area.voteColors?.[color] || 0) / total) * 100);
     };
 
     const checkOverlapFromPoints = (points) => {
@@ -379,8 +364,52 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
 
     const getVoteFontSize = (area) => {
         const basePx = parseFloat(area.fontSize) || 14;
-        const boost = 1 + Math.min(area.votes || 0, 50) * 0.02;
+        const totalVotes = getVoteTotal(area);
+        const boost = 1 + Math.min(totalVotes, 50) * 0.02;
         return basePx * boost + 'px';
+    };
+
+    const getCategoryLabel = (category) => {
+        return CATEGORIES[category]?.label || category;
+    };
+
+    const getCategoryIcon = (category) => {
+        return CATEGORIES[category]?.icon || '⚠️';
+    };
+
+    const VoteColorButton = ({ area, voteColor }) => {
+        const colorMap = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444' };
+        const isActive = area.userVoteColor === voteColor;
+        const pct = getVotePercentage(area, voteColor);
+        const count = area.voteColors?.[voteColor] || 0;
+        return (
+            <div
+                onClick={(e) => { e.stopPropagation(); handleColorVote(area, voteColor); }}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    gap: '2px',
+                }}
+            >
+                <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: colorMap[voteColor],
+                    border: isActive ? '3px solid var(--text)' : '2px solid rgba(0,0,0,0.15)',
+                    transition: 'all 0.2s ease',
+                    transform: isActive ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow: isActive ? `0 0 8px ${colorMap[voteColor]}66` : 'none',
+                }} />
+                <span style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    color: colorMap[voteColor],
+                }}>{count} ({pct}%)</span>
+            </div>
+        );
     };
 
     const ColorButton = ({ c, label }) => (
@@ -410,6 +439,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
             {filteredAreas.map((area) => {
                 const isOwner = area.userId === currentUserId;
                 const colorHex = area.color === 'blue' ? '#3b82f6' : area.color === 'green' ? '#22c55e' : '#ef4444';
+                const totalVotes = getVoteTotal(area);
 
                 return (
                     <Polygon
@@ -435,38 +465,34 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                                     opacity: editingArea === area.id ? 0.3 : 1
                                 }}
                             >
-                                {area.text}
+                                {getCategoryIcon(area.category)} {getCategoryLabel(area.category)}
                             </div>
                         </Tooltip>
 
                         {mode !== 'PIN' && editingArea !== area.id && (
                             <Popup>
                                 <div>
-                                    <p><strong>{area.text}</strong></p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '1.3rem' }}>{getCategoryIcon(area.category)}</span>
+                                        <strong>{getCategoryLabel(area.category)}</strong>
+                                    </div>
                                     <small>{new Date(area.createdAt).toLocaleDateString()}</small>
 
-                                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <button
-                                            onClick={() => handleVote(area, 1)}
-                                            className={`vote-btn ${area.userVoteValue === 1 ? 'voted' : ''}`}
-                                        >
-                                            👍
-                                        </button>
-                                        <span style={{ fontWeight: 700, fontSize: '0.9rem', minWidth: '20px', textAlign: 'center', color: area.votes > 0 ? '#22c55e' : area.votes < 0 ? '#ef4444' : '#64748b' }}>
-                                            {area.votes}
-                                        </span>
-                                        <button
-                                            onClick={() => handleVote(area, -1)}
-                                            className={`vote-btn dislike-btn ${area.userVoteValue === -1 ? 'disliked' : ''}`}
-                                        >
-                                            👎
-                                        </button>
-                                        <button
-                                            onClick={() => handleToggleComments(area.id)}
-                                            className="action-btn comment-btn"
-                                        >
-                                            💬 Comments {area.commentCount > 0 && `(${area.commentCount})`}
-                                        </button>
+                                    {/* Color vote buttons */}
+                                    <div style={{ marginTop: '10px' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                                            Vote Color
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', justifyContent: 'center' }}>
+                                            <VoteColorButton area={area} voteColor="red" />
+                                            <VoteColorButton area={area} voteColor="blue" />
+                                            <VoteColorButton area={area} voteColor="green" />
+                                        </div>
+                                        {totalVotes > 0 && (
+                                            <div style={{ fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center', marginTop: '4px' }}>
+                                                {totalVotes} total vote{totalVotes !== 1 ? 's' : ''}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {isOwner && (
@@ -488,7 +514,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                                             <button
                                                 onClick={() => {
                                                     setEditingArea(area.id);
-                                                    setText(area.text);
+                                                    setSelectedCategory(area.category);
                                                     setColor(area.color);
                                                     setCurrentLayer(area.latlngs);
                                                 }}
@@ -507,89 +533,6 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                                             </button>
                                         </div>
                                     )}
-
-                                {/* Comments Section */}
-                                {commentsVisibleForArea === area.id && (
-                                    <div className="comments-section" style={{ marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Comments</h4>
-
-                                        <div className="comments-list" style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '8px' }}>
-                                            {loadingComments ? (
-                                                <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center' }}>Loading...</div>
-                                            ) : areaComments[area.id]?.length > 0 ? (
-                                                areaComments[area.id].map(comment => (
-                                                    <div key={comment.id} style={{
-                                                        background: '#f9fafb',
-                                                        padding: '6px 8px',
-                                                        borderRadius: '6px',
-                                                        marginBottom: '6px',
-                                                        fontSize: '0.85rem'
-                                                    }}>
-                                                        <div style={{ wordBreak: 'break-word' }}>{comment.text}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>
-                                                            {new Date(comment.createdAt).toLocaleDateString()} {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center', margin: '10px 0' }}>No comments yet.</div>
-                                            )}
-                                        </div>
-
-                                        {commentError && (
-                                            <div style={{
-                                                padding: '6px 8px',
-                                                marginBottom: '8px',
-                                                background: '#fef2f2',
-                                                color: '#b91c1c',
-                                                border: '1px solid #fecaca',
-                                                borderRadius: '6px',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                {commentError}
-                                            </div>
-                                        )}
-
-                                        <form onSubmit={(e) => handleAddComment(e, area.id)} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            <input
-                                                type="text"
-                                                value={newCommentText}
-                                                onChange={(e) => setNewCommentText(e.target.value)}
-                                                placeholder="Write a comment..."
-                                                maxLength={100}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #cbd5e1',
-                                                    fontSize: '16px',
-                                                    outline: 'none',
-                                                }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.7rem', color: newCommentText.length >= 100 ? '#ef4444' : '#9ca3af' }}>
-                                                    {newCommentText.length}/100
-                                                </span>
-                                                <button
-                                                    type="submit"
-                                                    disabled={!newCommentText.trim() || newCommentText.length > 100}
-                                                    style={{
-                                                        padding: '4px 10px',
-                                                        background: 'var(--accent)',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '6px',
-                                                        cursor: !newCommentText.trim() || newCommentText.length > 100 ? 'not-allowed' : 'pointer',
-                                                        fontSize: '0.85rem',
-                                                        opacity: !newCommentText.trim() || newCommentText.length > 100 ? 0.5 : 1,
-                                                        fontWeight: '600',
-                                                    }}
-                                                >
-                                                    Post
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                )}
                                 </div>
                             </Popup>
                         )}
@@ -614,7 +557,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                 <CircleMarker
                     key={i}
                     center={pt}
-                    radius={i === 0 ? 10 : 6} // Highlight start point
+                    radius={i === 0 ? 10 : 6}
                     pathOptions={{
                         color: i === 0 ? '#3b82f6' : '#fff',
                         weight: 2,
@@ -770,25 +713,41 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                             </div>
                         </div>
 
-                        <input
-                            type="text"
-                            value={text}
-                            onChange={e => setText(e.target.value)}
-                            placeholder="e.g. 'Hipster Main St'..."
-                            maxLength={35}
-                            style={{
-                                width: '100%',
-                                padding: '10px 12px',
-                                marginBottom: '4px',
-                                borderRadius: '10px',
-                                border: '1px solid rgba(0,0,0,0.1)',
-                                fontSize: '16px',
-                                background: 'rgba(0,0,0,0.02)',
-                                boxSizing: 'border-box',
-                                outline: 'none',
-                            }}
-                            autoFocus
-                        />
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                                Category
+                            </label>
+                            <select
+                                value={selectedCategory}
+                                onChange={e => setSelectedCategory(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    borderRadius: '10px',
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    fontSize: '16px',
+                                    background: 'rgba(0,0,0,0.02)',
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    appearance: 'none',
+                                    WebkitAppearance: 'none',
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    paddingRight: '32px',
+                                    cursor: 'pointer',
+                                }}
+                                autoFocus
+                            >
+                                <option value="" disabled>Select a category...</option>
+                                {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                    <option key={key} value={key}>
+                                        {cat.icon} {cat.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'right' }}>
                             More votes = <strong>BIGGER</strong> text!
                         </div>
@@ -813,18 +772,18 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                             </button>
                             <button
                                 type="submit"
-                                disabled={!!error && !error.includes('Warning')}
+                                disabled={(!!error && !error.includes('Warning')) || !selectedCategory}
                                 style={{
                                     flex: 2,
                                     padding: '10px',
-                                    background: (!!error && !error.includes('Warning')) ? '#ccc' : 'var(--accent)',
+                                    background: ((!!error && !error.includes('Warning')) || !selectedCategory) ? '#ccc' : 'var(--accent)',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '10px',
-                                    cursor: (!!error && !error.includes('Warning')) ? 'not-allowed' : 'pointer',
+                                    cursor: ((!!error && !error.includes('Warning')) || !selectedCategory) ? 'not-allowed' : 'pointer',
                                     fontWeight: 'bold',
                                     fontSize: '14px',
-                                    boxShadow: (!!error && !error.includes('Warning')) ? 'none' : '0 2px 10px rgba(59,130,246,0.3)',
+                                    boxShadow: ((!!error && !error.includes('Warning')) || !selectedCategory) ? 'none' : '0 2px 10px rgba(59,130,246,0.3)',
                                 }}
                             >
                                 {editingArea ? 'Save Changes' : 'Save Area'}

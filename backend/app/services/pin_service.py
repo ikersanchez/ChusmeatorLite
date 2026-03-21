@@ -22,11 +22,15 @@ class PinService:
                 detail=f"Rate limit exceeded: Maximum {settings.max_pins_per_day} pins per day allowed."
             )
 
+        color_value = pin_data.color.value if hasattr(pin_data.color, 'value') else pin_data.color
+        category_value = pin_data.category.value if hasattr(pin_data.category, 'value') else pin_data.category
+
         db_pin = PinModel(
             lat=pin_data.lat,
             lng=pin_data.lng,
-            text=pin_data.text,
-            color=pin_data.color.value if hasattr(pin_data.color, 'value') else pin_data.color,
+            category=category_value,
+            color=color_value,
+            original_color=color_value,
             user_id=user_id
         )
         db.add(db_pin)
@@ -49,6 +53,8 @@ class PinService:
         update_dict = update_data.model_dump(exclude_unset=True)
         for key, value in update_dict.items():
             if key == 'color' and hasattr(value, 'value'):
+                setattr(pin, key, value.value)
+            elif key == 'category' and hasattr(value, 'value'):
                 setattr(pin, key, value.value)
             else:
                 setattr(pin, key, value)

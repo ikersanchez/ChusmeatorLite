@@ -57,20 +57,20 @@ class AreaService:
                 for existing in existing_areas:
                     existing_poly = AreaService._to_shapely_polygon(existing.latlngs)
                     if existing_poly and new_poly.intersects(existing_poly):
-                        # Calculate intersection area to avoid tiny overlaps due to floating point errors
-                        # but for neighborhoods, even a small overlap might be intentional? 
-                        # Shapely's intersects is usually what we want.
-                        # If they just touch, it's fine. Overlap means intersection area > 0.
                         if new_poly.intersection(existing_poly).area > 1e-9:
                             raise HTTPException(
                                 status_code=400,
                                 detail="Area overlaps with an existing one. Please draw in a clear spot!"
                             )
 
+        color_value = area_data.color.value if hasattr(area_data.color, 'value') else area_data.color
+        category_value = area_data.category.value if hasattr(area_data.category, 'value') else area_data.category
+
         db_area = AreaModel(
             latlngs=area_data.latlngs,
-            color=area_data.color.value if hasattr(area_data.color, 'value') else area_data.color,
-            text=area_data.text,
+            color=color_value,
+            original_color=color_value,
+            category=category_value,
             font_size=area_data.font_size,
             user_id=user_id
         )
@@ -94,6 +94,8 @@ class AreaService:
         update_dict = update_data.model_dump(exclude_unset=True)
         for key, value in update_dict.items():
             if key == 'color' and hasattr(value, 'value'):
+                setattr(area, key, value.value)
+            elif key == 'category' and hasattr(value, 'value'):
                 setattr(area, key, value.value)
             else:
                 setattr(area, key, value)

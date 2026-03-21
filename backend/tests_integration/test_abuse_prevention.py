@@ -7,12 +7,12 @@ def test_pin_rate_limiting(client):
     
     # Create 20 pins
     for i in range(20):
-        payload = {"lat": 40.0 + i*0.01, "lng": -3.0, "text": f"Pin {i}", "color": "blue"}
+        payload = {"lat": 40.0 + i*0.01, "lng": -3.0, "category": "crime", "color": "blue"}
         response = client.post("/api/pins", json=payload, headers=headers)
         assert response.status_code == 201
         
     # Attempt to create the 21st pin
-    payload = {"lat": 40.21, "lng": -3.0, "text": "Pin 21", "color": "blue"}
+    payload = {"lat": 40.21, "lng": -3.0, "category": "crime", "color": "blue"}
     response = client.post("/api/pins", json=payload, headers=headers)
     assert response.status_code == 429
     assert "Rate limit exceeded" in response.json()["detail"]
@@ -26,7 +26,7 @@ def test_area_rate_limiting(client):
         payload = {
             "latlngs": [[{"lat": 40.0 + i*0.01, "lng": -3.0}, {"lat": 40.01 + i*0.01, "lng": -3.0}, {"lat": 40.0 + i*0.01, "lng": -2.99}]],
             "color": "blue",
-            "text": f"Area {i}",
+            "category": "construction",
             "fontSize": "16px"
         }
         response = client.post("/api/areas", json=payload, headers=headers)
@@ -36,32 +36,10 @@ def test_area_rate_limiting(client):
     payload = {
         "latlngs": [[{"lat": 40.21, "lng": -3.0}, {"lat": 40.22, "lng": -3.0}, {"lat": 40.21, "lng": -2.99}]],
         "color": "blue",
-        "text": "Area 21",
+        "category": "construction",
         "fontSize": "16px"
     }
     response = client.post("/api/areas", json=payload, headers=headers)
-    assert response.status_code == 429
-    assert "Rate limit exceeded" in response.json()["detail"]
-
-def test_comment_rate_limiting(client):
-    """Verify that a user cannot create more than 20 comments per day."""
-    headers = {"X-User-Id": "rate_limited_comment_user"}
-    
-    # 1. Create a pin to comment on
-    pin_payload = {"lat": 40.5, "lng": -3.5, "text": "Target Pin", "color": "red"}
-    response = client.post("/api/pins", json=pin_payload, headers=headers)
-    assert response.status_code == 201
-    pin_id = response.json()["id"]
-    
-    # 2. Create 20 comments
-    for i in range(20):
-        comment_payload = {"text": f"Comment {i}"}
-        response = client.post(f"/api/pins/{pin_id}/comments", json=comment_payload, headers=headers)
-        assert response.status_code == 201
-        
-    # 3. Attempt to create the 21st comment
-    comment_payload = {"text": "Comment 21"}
-    response = client.post(f"/api/pins/{pin_id}/comments", json=comment_payload, headers=headers)
     assert response.status_code == 429
     assert "Rate limit exceeded" in response.json()["detail"]
 
@@ -73,7 +51,7 @@ def test_area_size_limit(client):
     payload = {
         "latlngs": [[{"lat": 40.0, "lng": -3.0}, {"lat": 40.03, "lng": -3.0}, {"lat": 40.0, "lng": -2.97}]],
         "color": "blue",
-        "text": "Huge Area",
+        "category": "loud_music",
         "fontSize": "16px"
     }
     response = client.post("/api/areas", json=payload, headers=headers)
@@ -84,7 +62,7 @@ def test_area_size_limit(client):
     payload = {
         "latlngs": [[{"lat": 40.0, "lng": -3.0}, {"lat": 40.019, "lng": -3.0}, {"lat": 40.0, "lng": -2.981}]],
         "color": "blue",
-        "text": "Large but OK Area",
+        "category": "loud_music",
         "fontSize": "16px"
     }
     response = client.post("/api/areas", json=payload, headers=headers)
