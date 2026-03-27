@@ -3,20 +3,7 @@ import { FeatureGroup, Polygon, Polyline, CircleMarker, Tooltip, Popup, useMap, 
 import L from 'leaflet';
 import { api } from '../../../api/apiService';
 import * as turf from '@turf/turf';
-
-// Category definitions (same as PinInteraction)
-const CATEGORIES = {
-    crime: { label: 'Crime / Delinquency', icon: '🔫' },
-    alcohol: { label: 'Alcohol / Partying', icon: '🍺' },
-    screaming: { label: 'Screaming / Disturbances', icon: '😱' },
-    loud_music: { label: 'Loud Music', icon: '🎵' },
-    traffic: { label: 'Traffic / Noise', icon: '🚗' },
-    poor_lighting: { label: 'Poor Lighting', icon: '💡' },
-    dirty: { label: 'Dirty / Trash', icon: '🗑️' },
-    construction: { label: 'Construction / Roadworks', icon: '🚧' },
-    dangerous_animals: { label: 'Dangerous Animals', icon: '🐕' },
-    general_warning: { label: 'General Warning', icon: '⚠️' },
-};
+import { CATEGORIES } from '../../../utils/categories';
 
 const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const [currentLayer, setCurrentLayer] = useState(null);
@@ -465,15 +452,14 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                                     opacity: editingArea === area.id ? 0.3 : 1
                                 }}
                             >
-                                {getCategoryIcon(area.category)} {getCategoryLabel(area.category)}
+                                {getCategoryLabel(area.category)}
                             </div>
                         </Tooltip>
 
                         {mode !== 'PIN' && editingArea !== area.id && (
                             <Popup>
                                 <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '1.3rem' }}>{getCategoryIcon(area.category)}</span>
+                                    <div style={{ marginBottom: '4px' }}>
                                         <strong>{getCategoryLabel(area.category)}</strong>
                                     </div>
                                     <small>{new Date(area.createdAt).toLocaleDateString()}</small>
