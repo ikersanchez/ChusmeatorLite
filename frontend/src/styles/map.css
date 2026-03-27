@@ -78,3 +78,125 @@
 .leaflet-control-attribution a:hover {
     text-decoration: underline;
 }
+
+/* Premium Voting UI */
+.vote-section-premium {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.vote-title-premium {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Segmented Vibe Bar */
+.vibe-progress-container {
+    height: 8px;
+    width: 100%;
+    background: #f1f5f9;
+    border-radius: 10px;
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.vibe-segment {
+    height: 100%;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.vibe-segment-red { background-color: #ef4444; }
+.vibe-segment-blue { background-color: #3b82f6; }
+.vibe-segment-green { background-color: #22c55e; }
+
+/* Premium Vote Buttons */
+.vote-grid-premium {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vote-btn-premium {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+}
+
+.vote-btn-premium:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.vote-btn-premium:active {
+    transform: scale(0.95);
+}
+
+.vote-btn-premium.active {
+    background: var(--surface);
+    border-color: rgba(0,0,0,0.15);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.vote-btn-premium.active::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid;
+    border-radius: 14px;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.vote-btn-premium.active.red::after { border-color: #ef4444; }
+.vote-btn-premium.active.blue::after { border-color: #3b82f6; }
+.vote-btn-premium.active.green::after { border-color: #22c55e; }
+
+.vote-dot-premium {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-bottom: 2px;
+}
+
+.vote-count-premium {
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.vote-label-premium {
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Animations */
+@keyframes pulse-vibe {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+.majority-vibe {
+    animation: pulse-vibe 2s infinite ease-in-out;
+}

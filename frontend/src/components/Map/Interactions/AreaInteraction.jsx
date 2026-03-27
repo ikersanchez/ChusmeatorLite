@@ -364,37 +364,34 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
         return CATEGORIES[category]?.icon || '⚠️';
     };
 
-    const VoteColorButton = ({ area, voteColor }) => {
-        const colorMap = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444' };
-        const isActive = area.userVoteColor === voteColor;
-        const pct = getVotePercentage(area, voteColor);
-        const count = area.voteColors?.[voteColor] || 0;
+    const VoteProgressBar = ({ area }) => {
+        const redPct = getVotePercentage(area, 'red');
+        const bluePct = getVotePercentage(area, 'blue');
+        const greenPct = getVotePercentage(area, 'green');
+        
         return (
-            <div
-                onClick={(e) => { e.stopPropagation(); handleColorVote(area, voteColor); }}
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    gap: '2px',
-                }}
+            <div className="vibe-progress-container">
+                <div className="vibe-segment vibe-segment-red" style={{ width: `${redPct}%` }} />
+                <div className="vibe-segment vibe-segment-blue" style={{ width: `${bluePct}%` }} />
+                <div className="vibe-segment vibe-segment-green" style={{ width: `${greenPct}%` }} />
+            </div>
+        );
+    };
+
+    const VoteColorButton = ({ area, color, label }) => {
+        const isActive = area.userVoteColor === color;
+        const count = area.voteColors?.[color] || 0;
+        const total = getVoteTotal(area);
+        const isMajority = total > 0 && count === Math.max(area.voteColors?.red || 0, area.voteColors?.blue || 0, area.voteColors?.green || 0);
+
+        return (
+            <div 
+                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'majority-vibe' : ''}`}
+                onClick={(e) => { e.stopPropagation(); handleColorVote(area, color); }}
             >
-                <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    backgroundColor: colorMap[voteColor],
-                    border: isActive ? '3px solid var(--text)' : '2px solid rgba(0,0,0,0.15)',
-                    transition: 'all 0.2s ease',
-                    transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                    boxShadow: isActive ? `0 0 8px ${colorMap[voteColor]}66` : 'none',
-                }} />
-                <span style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    color: colorMap[voteColor],
-                }}>{count} ({pct}%)</span>
+                <div className="vote-dot-premium" style={{ backgroundColor: color === 'red' ? '#ef4444' : color === 'blue' ? '#3b82f6' : '#22c55e' }} />
+                <span className="vote-count-premium">{count}</span>
+                <span className="vote-label-premium">{label}</span>
             </div>
         );
     };
@@ -464,19 +461,23 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                                     </div>
                                     <small>{new Date(area.createdAt).toLocaleDateString()}</small>
 
-                                    {/* Color vote buttons */}
-                                    <div style={{ marginTop: '10px' }}>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                                            Vote Color
+                                    {/* Premium Color Voting Section */}
+                                    <div className="vote-section-premium">
+                                        <div className="vote-title-premium" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
+                                            <span>📊</span> Community Vibe
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', justifyContent: 'center' }}>
-                                            <VoteColorButton area={area} voteColor="red" />
-                                            <VoteColorButton area={area} voteColor="blue" />
-                                            <VoteColorButton area={area} voteColor="green" />
+                                        
+                                        <VoteProgressBar area={area} />
+
+                                        <div className="vote-grid-premium">
+                                            <VoteColorButton area={area} color="red" label="Red" />
+                                            <VoteColorButton area={area} color="blue" label="Blue" />
+                                            <VoteColorButton area={area} color="green" label="Green" />
                                         </div>
+                                        
                                         {totalVotes > 0 && (
-                                            <div style={{ fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center', marginTop: '4px' }}>
-                                                {totalVotes} total vote{totalVotes !== 1 ? 's' : ''}
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '12px', opacity: 0.8 }}>
+                                                {totalVotes} total confirmation{totalVotes !== 1 ? 's' : ''}
                                             </div>
                                         )}
                                     </div>
@@ -734,9 +735,6 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                             </select>
                         </div>
 
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'right' }}>
-                            More votes = <strong>BIGGER</strong> text!
-                        </div>
 
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button

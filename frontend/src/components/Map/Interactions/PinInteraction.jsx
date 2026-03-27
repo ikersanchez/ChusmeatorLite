@@ -246,37 +246,34 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
         );
     };
 
-    const VoteColorButton = ({ pin, color }) => {
-        const colorMap = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444' };
-        const isActive = pin.userVoteColor === color;
-        const pct = getVotePercentage(pin, color);
-        const count = pin.voteColors?.[color] || 0;
+    const VoteProgressBar = ({ pin }) => {
+        const redPct = getVotePercentage(pin, 'red');
+        const bluePct = getVotePercentage(pin, 'blue');
+        const greenPct = getVotePercentage(pin, 'green');
+        
         return (
-            <div
+            <div className="vibe-progress-container">
+                <div className="vibe-segment vibe-segment-red" style={{ width: `${redPct}%` }} />
+                <div className="vibe-segment vibe-segment-blue" style={{ width: `${bluePct}%` }} />
+                <div className="vibe-segment vibe-segment-green" style={{ width: `${greenPct}%` }} />
+            </div>
+        );
+    };
+
+    const VoteColorButton = ({ pin, color, label }) => {
+        const isActive = pin.userVoteColor === color;
+        const count = pin.voteColors?.[color] || 0;
+        const total = getVoteTotal(pin);
+        const isMajority = total > 0 && count === Math.max(pin.voteColors?.red || 0, pin.voteColors?.blue || 0, pin.voteColors?.green || 0);
+
+        return (
+            <div 
+                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'majority-vibe' : ''}`}
                 onClick={(e) => { e.stopPropagation(); handleColorVote(pin, color); }}
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    gap: '2px',
-                }}
             >
-                <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    backgroundColor: colorMap[color],
-                    border: isActive ? '3px solid var(--text)' : '2px solid rgba(0,0,0,0.15)',
-                    transition: 'all 0.2s ease',
-                    transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                    boxShadow: isActive ? `0 0 8px ${colorMap[color]}66` : 'none',
-                }} />
-                <span style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    color: colorMap[color],
-                }}>{count} ({pct}%)</span>
+                <div className="vote-dot-premium" style={{ backgroundColor: color === 'red' ? '#ef4444' : color === 'blue' ? '#3b82f6' : '#22c55e' }} />
+                <span className="vote-count-premium">{count}</span>
+                <span className="vote-label-premium">{label}</span>
             </div>
         );
     };
@@ -352,19 +349,23 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                     {new Date(pin.createdAt).toLocaleDateString()}
                                 </small>
 
-                                {/* Color vote buttons */}
-                                <div style={{ marginTop: '10px' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                                        Vote Color
+                                {/* Premium Color Voting Section */}
+                                <div className="vote-section-premium">
+                                    <div className="vote-title-premium" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
+                                        <span>📊</span> Community Vibe
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', justifyContent: 'center' }}>
-                                        <VoteColorButton pin={pin} color="red" />
-                                        <VoteColorButton pin={pin} color="blue" />
-                                        <VoteColorButton pin={pin} color="green" />
+                                    
+                                    <VoteProgressBar pin={pin} />
+
+                                    <div className="vote-grid-premium">
+                                        <VoteColorButton pin={pin} color="red" label="Red" />
+                                        <VoteColorButton pin={pin} color="blue" label="Blue" />
+                                        <VoteColorButton pin={pin} color="green" label="Green" />
                                     </div>
+                                    
                                     {totalVotes > 0 && (
-                                        <div style={{ fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center', marginTop: '4px' }}>
-                                            {totalVotes} total vote{totalVotes !== 1 ? 's' : ''}
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '12px', opacity: 0.8 }}>
+                                            {totalVotes} total confirmation{totalVotes !== 1 ? 's' : ''}
                                         </div>
                                     )}
                                 </div>
@@ -507,9 +508,6 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
                                 </select>
                             </div>
 
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'right' }}>
-                                Get <strong>5 votes</strong> to make it permanent!
-                            </div>
 
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
