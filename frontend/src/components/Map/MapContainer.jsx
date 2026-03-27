@@ -73,7 +73,7 @@ const ChusmeatorMap = () => {
             <LayersControl position="topleft">
                 <LayersControl.BaseLayer checked name="OpenStreetMap">
                     <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        attribution='Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                 </LayersControl.BaseLayer>
@@ -86,23 +86,23 @@ const ChusmeatorMap = () => {
             </LayersControl>
 
             <SearchBox />
-            <Toolbar 
-                mode={interactionMode} 
-                onModeChange={setInteractionMode} 
+            <Toolbar
+                mode={interactionMode}
+                onModeChange={setInteractionMode}
                 filters={filters}
                 onFiltersChange={setFilters}
                 availableYears={availableYears}
             />
 
-            <PinInteraction 
-                mode={interactionMode} 
-                filters={filters.pins} 
+            <PinInteraction
+                mode={interactionMode}
+                filters={filters.pins}
                 pins={pins}
                 setPins={setPins}
             />
-            <AreaInteraction 
-                mode={interactionMode} 
-                filters={filters.areas} 
+            <AreaInteraction
+                mode={interactionMode}
+                filters={filters.areas}
                 areas={areas}
                 setAreas={setAreas}
             />

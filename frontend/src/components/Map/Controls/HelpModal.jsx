@@ -105,12 +105,17 @@ const HelpModal = ({ onClose }) => {
                         <li style={{ marginBottom: '5px' }}><strong>Pins:</strong> Reach <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>5 votes</span> to make the category label permanently visible!</li>
                         <li style={{ marginBottom: '5px' }}><strong>Areas:</strong> More votes = <strong>BIGGER</strong> category label on the map.</li>
                         <li style={{ marginBottom: '5px' }}><strong>Color Change:</strong> Need at least <strong>10 total votes</strong> for the majority color to override the original one.</li>
-
                     </ul>
                 </div>
 
-                <button
-                    onClick={onClose}
+                <div style={{ marginTop: '30px', borderTop: '1px solid #e5e7eb', paddingTop: '15px', marginBottom: '15px' }}>
+                    <p style={{ color: '#9ca3af', fontSize: '0.8rem', textAlign: 'center', margin: 0 }}>
+                        Map data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>OpenStreetMap</a>, licensed under <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>ODbL</a>.
+                    </p>
+                </div>
+
+                 <button
+                     onClick={onClose}
                     style={{
                         width: '100%',
                         padding: '12px',

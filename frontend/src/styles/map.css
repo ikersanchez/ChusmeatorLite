@@ -56,3 +56,25 @@
     background: transparent;
     border: none;
 }
+
+/* OpenStreetMap Attribution Visibility */
+.leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.8) !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    color: #4b5563 !important; /* Tailwind gray-600 */
+    border-top-left-radius: 4px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-control-attribution a {
+    color: #4f46e5 !important; /* Indigo color for contrast */
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.leaflet-control-attribution a:hover {
+    text-decoration: underline;
+}

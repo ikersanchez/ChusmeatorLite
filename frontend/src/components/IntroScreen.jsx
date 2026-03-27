@@ -86,20 +86,20 @@ const IntroScreen = ({ onComplete }) => {
                                 <feGaussianBlur stdDeviation="2" />
                             </filter>
                         </defs>
-                        
+
                         {/* Outer Glow */}
                         <circle cx="45" cy="45" r="30" fill="none" stroke="rgba(99,102,241,0.5)" strokeWidth="4" filter="blur(6px)" />
-                        
+
                         {/* Glass Body */}
                         <circle cx="45" cy="45" r="30" fill="url(#glassGradient)" stroke="rgba(255,255,255,0.8)" strokeWidth="3" backdropFilter="blur(10px)" />
-                        
+
                         {/* Inner reflection */}
                         <path d="M 25 35 A 25 25 0 0 1 55 20" stroke="rgba(255,255,255,0.6)" strokeWidth="3" strokeLinecap="round" fill="none" />
-                        
+
                         {/* Handle */}
                         <path d="M 66 66 L 88 88" stroke="url(#glassGradient)" strokeWidth="12" strokeLinecap="round" />
                         <path d="M 66 66 L 88 88" stroke="rgba(255,255,255,0.8)" strokeWidth="4" strokeLinecap="round" />
-                        
+
                         {/* Dynamic Eye/Center point */}
                         <circle cx="45" cy="45" r="8" fill="#e2e8f0">
                             <animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite" />
@@ -122,20 +122,20 @@ const IntroScreen = ({ onComplete }) => {
                     alignItems: 'center',
                     justifyContent: 'center'
                 }}>
-                    <img 
-                        src={logo} 
-                        alt="Logo" 
-                        style={{ 
-                            height: '1.8em', 
-                            width: 'auto', 
-                            objectFit: 'contain', 
+                    <img
+                        src={logo}
+                        alt="Logo"
+                        style={{
+                            height: '1.8em',
+                            width: 'auto',
+                            objectFit: 'contain',
                             filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))',
                             margin: '0 -0.8em' // Removes the transparent padding from the original image width
-                        }} 
+                        }}
                     />
                     Chusmeator
                 </h1>
-                
+
                 <p style={{
                     fontSize: 'clamp(1rem, 4vw, 1.25rem)',
                     color: '#94a3b8',
