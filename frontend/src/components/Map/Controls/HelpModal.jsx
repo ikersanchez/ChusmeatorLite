@@ -93,7 +93,7 @@ const HelpModal = ({ onClose }) => {
                     </h3>
                     <ul style={{ color: '#6b7280', fontSize: '0.95rem', paddingLeft: '20px', lineHeight: '1.5' }}>
                         <li style={{ marginBottom: '5px' }}><strong>No typing needed!</strong> Create a pin or area by simply selecting a category and an initial color.</li>
-                        <li style={{ marginBottom: '5px' }}><strong>Vote the Vibe:</strong> Tap any marker to vote on its true color. A minimum of <strong>10 votes</strong> is required to change the initial color, and the majority wins!</li>
+                        <li style={{ marginBottom: '5px' }}><strong>Vote the Vibe:</strong> Tap any marker to vote on its true color. The community's overall vibe will be visible to everyone!</li>
                     </ul>
                 </div>
 
@@ -104,7 +104,6 @@ const HelpModal = ({ onClose }) => {
                     <ul style={{ color: '#6b7280', fontSize: '0.95rem', paddingLeft: '20px', lineHeight: '1.5' }}>
                         <li style={{ marginBottom: '5px' }}><strong>Pins:</strong> Reach <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>5 votes</span> to make the category label permanently visible!</li>
                         <li style={{ marginBottom: '5px' }}><strong>Areas:</strong> More votes = <strong>BIGGER</strong> category label on the map.</li>
-                        <li style={{ marginBottom: '5px' }}><strong>Color Change:</strong> Need at least <strong>10 total votes</strong> for the majority color to override the original one.</li>
                     </ul>
                 </div>
 

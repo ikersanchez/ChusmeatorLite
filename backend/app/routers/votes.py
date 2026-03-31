@@ -15,7 +15,6 @@ TARGET_MODELS = {
     "area": AreaModel,
 }
 
-
 @router.post("/votes", response_model=schemas.VoteResponse, status_code=201)
 def create_vote(
     vote_data: schemas.VoteCreate,
@@ -46,14 +45,12 @@ def create_vote(
             # Same color clicked — remove vote (toggle off)
             db.delete(existing_vote)
             db.commit()
-            VoteService.update_target_color(db, vote_data.target_type, vote_data.target_id)
             raise HTTPException(status_code=200, detail="Vote removed")
         else:
             # Different color — update existing vote
             existing_vote.vote_color = vote_color
             db.commit()
             db.refresh(existing_vote)
-            VoteService.update_target_color(db, vote_data.target_type, vote_data.target_id)
             return existing_vote
 
     try:
