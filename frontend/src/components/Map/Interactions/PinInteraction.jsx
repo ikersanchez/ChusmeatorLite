@@ -3,6 +3,7 @@ import { Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '../../../api/apiService';
 import { CATEGORIES } from '../../../utils/categories';
+import { formatRelativeTime } from '../../../utils/timeUtils';
 
 // Create a custom SVG icon for pins with category-specific shapes
 const createCategoryIcon = (category, color) => {
@@ -268,7 +269,7 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
 
         return (
             <div 
-                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'majority-vibe' : ''}`}
+                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'vibe-winner' : ''}`}
                 onClick={(e) => { e.stopPropagation(); handleColorVote(pin, color); }}
             >
                 <div className="vote-dot-premium" style={{ backgroundColor: color === 'red' ? '#ef4444' : color === 'blue' ? '#3b82f6' : '#22c55e' }} />
@@ -339,15 +340,17 @@ const PinInteraction = ({ mode, filters, pins, setPins }) => {
 
                         <Popup className="premium-popup">
                             <div className="popup-content">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                                     <span style={{ fontSize: '1.3rem', display: 'flex' }}>
                                         {getCategorySvg(pin.category, pin.color === 'blue' ? '#3b82f6' : pin.color === 'green' ? '#22c55e' : '#ef4444')}
                                     </span>
                                     <strong style={{ marginLeft: '2px' }}>{getCategoryLabel(pin.category)}</strong>
+                                    {totalVotes > 10 && <span className="trending-badge">🔥 Trending</span>}
                                 </div>
-                                <small style={{ color: '#666' }}>
-                                    {new Date(pin.createdAt).toLocaleDateString()}
-                                </small>
+                                <div className="popup-metadata">
+                                    <span>{formatRelativeTime(pin.createdAt)}</span>
+                                    {isOwner && <span style={{ opacity: 0.6 }}>Your Post</span>}
+                                </div>
 
                                 {/* Premium Color Voting Section */}
                                 <div className="vote-section-premium">

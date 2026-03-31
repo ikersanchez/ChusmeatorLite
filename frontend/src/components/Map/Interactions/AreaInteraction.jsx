@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { api } from '../../../api/apiService';
 import * as turf from '@turf/turf';
 import { CATEGORIES } from '../../../utils/categories';
+import { formatRelativeTime } from '../../../utils/timeUtils';
 
 const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
     const [currentLayer, setCurrentLayer] = useState(null);
@@ -386,7 +387,7 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
 
         return (
             <div 
-                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'majority-vibe' : ''}`}
+                className={`vote-btn-premium ${color} ${isActive ? 'active' : ''} ${isMajority ? 'vibe-winner' : ''}`}
                 onClick={(e) => { e.stopPropagation(); handleColorVote(area, color); }}
             >
                 <div className="vote-dot-premium" style={{ backgroundColor: color === 'red' ? '#ef4444' : color === 'blue' ? '#3b82f6' : '#22c55e' }} />
@@ -454,12 +455,16 @@ const AreaInteraction = ({ mode, filters, areas, setAreas }) => {
                         </Tooltip>
 
                         {mode !== 'PIN' && editingArea !== area.id && (
-                            <Popup>
-                                <div>
-                                    <div style={{ marginBottom: '4px' }}>
+                            <Popup className="premium-popup">
+                                <div className="popup-content">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                                         <strong>{getCategoryLabel(area.category)}</strong>
+                                        {totalVotes > 10 && <span className="trending-badge">🔥 Trending</span>}
                                     </div>
-                                    <small>{new Date(area.createdAt).toLocaleDateString()}</small>
+                                    <div className="popup-metadata">
+                                        <span>{formatRelativeTime(area.createdAt)}</span>
+                                        {isOwner && <span style={{ opacity: 0.6 }}>Your Post</span>}
+                                    </div>
 
                                     {/* Premium Color Voting Section */}
                                     <div className="vote-section-premium">

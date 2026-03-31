@@ -197,6 +197,66 @@
     100% { transform: scale(1); opacity: 0.8; }
 }
 
+@keyframes winner-glow {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px currentColor; }
+    100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
+}
+
 .majority-vibe {
     animation: pulse-vibe 2s infinite ease-in-out;
+}
+
+.vibe-winner {
+    position: relative;
+    z-index: 2;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+    transform: translateY(-4px) scale(1.05);
+    background: rgba(255, 255, 255, 1) !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+}
+
+/* Glassmorphism for Popups */
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden;
+}
+
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(16px) !important;
+}
+
+.premium-popup .popup-content {
+    padding: 2px 0;
+}
+
+.popup-metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    opacity: 0.7;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.trending-badge {
+    background: linear-gradient(135deg, #ff4d4d, #f9cb28);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.3);
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
 }
